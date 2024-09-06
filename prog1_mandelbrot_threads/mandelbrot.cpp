@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <algorithm>
+#include <chrono>
+#include <ctime>
+#include <iostream>
 
 // Use this code to time your threads
 #include "CycleTimer.h"
@@ -45,9 +48,10 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-// Flag to determine weather to interleave the rows in mandelbrotThread. If false, block
-// assignment will be used
-static bool interleave = true;
+// Flag to determine whether to interleave the rows when allocating the
+// work to threads in mandelbrotThread. If false, horizontal block assignment
+// will be used
+#define INTERLEAVE true
 
 // Core computation of Mandelbrot set membershop
 // Iterate complex number c to determine whether it diverges
@@ -115,7 +119,6 @@ typedef struct {
 } WorkerArgs;
 
 
-
 //
 // workerThreadStart --
 //
@@ -124,7 +127,11 @@ void* workerThreadStart(void* threadArgs) {
 
     WorkerArgs* args = static_cast<WorkerArgs*>(threadArgs);
 
-    if (interleave) {
+    auto start = std::chrono::high_resolution_clock::now();
+//    time_t start_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+//    std::cout << "Thread " << args->threadId << " start time: " << std::ctime(&start_time);
+
+    if (INTERLEAVE) {
         unsigned int count = (args->height + args->numThreads - 1) / args->numThreads;
 //        unsigned int startRow = args->threadId * count; // starts at 0
 //        unsigned int endRow = std::min((args->threadId + 1) * count, args->height);
@@ -153,7 +160,11 @@ void* workerThreadStart(void* threadArgs) {
                          startRow, endRow, args->maxIterations, args->output);
     }
 
-    printf("Hello world from thread %d\n", args->threadId);
+    auto end = std::chrono::high_resolution_clock::now();
+//    std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+//    std::cout << "Thread " << args->threadId << " end time: " << std::ctime(&end_time);
+    std::chrono::duration<double> duration = end - start;
+    std::cout << "Thread " << args->threadId << " took " << duration.count() << "secs" << std::endl;
 
     return NULL;
 }
