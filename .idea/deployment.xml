@@ -4,6 +4,13 @@
     <option name="confirmBeforeDeletion" value="false" />
     <option name="confirmBeforeUploading" value="false" />
     <serverData>
+      <paths name="Remote Host (a98db0d3-a013-495f-a824-8dcb6ff187e4)">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="ghc (767de23e-e4f2-4f3c-9c67-4d623ecd1a82)">
         <serverdata>
           <mappings>
