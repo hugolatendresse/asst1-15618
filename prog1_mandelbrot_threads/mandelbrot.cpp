@@ -128,13 +128,8 @@ void* workerThreadStart(void* threadArgs) {
     WorkerArgs* args = static_cast<WorkerArgs*>(threadArgs);
 
     auto start = std::chrono::high_resolution_clock::now();
-//    time_t start_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-//    std::cout << "Thread " << args->threadId << " start time: " << std::ctime(&start_time);
 
     if (INTERLEAVE) {
-        unsigned int count = (args->height + args->numThreads - 1) / args->numThreads;
-//        unsigned int startRow = args->threadId * count; // starts at 0
-//        unsigned int endRow = std::min((args->threadId + 1) * count, args->height);
 
         float dx = (args->x1 - args->x0) / args->width;
         float dy = (args->y1 - args->y0) / args->height;
@@ -151,7 +146,6 @@ void* workerThreadStart(void* threadArgs) {
 
     } else {
         // Doing block assignment
-        // TODO after block version works, inline the function and do interleaved version!
         unsigned int count = (args->height + args->numThreads - 1) / args->numThreads;
         unsigned int startRow = args->threadId * count; // starts at 0
         unsigned int endRow = std::min((args->threadId + 1) * count, args->height);
@@ -161,8 +155,6 @@ void* workerThreadStart(void* threadArgs) {
     }
 
     auto end = std::chrono::high_resolution_clock::now();
-//    std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-//    std::cout << "Thread " << args->threadId << " end time: " << std::ctime(&end_time);
     std::chrono::duration<double> duration = end - start;
     std::cout << "Thread " << args->threadId << " took " << duration.count() << "secs" << std::endl;
 
