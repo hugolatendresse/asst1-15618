@@ -127,10 +127,12 @@ void* workerThreadStart(void* threadArgs) {
 
     WorkerArgs* args = static_cast<WorkerArgs*>(threadArgs);
 
+    // Capture time at which work starts
     auto start = std::chrono::high_resolution_clock::now();
 
     if (INTERLEAVE) {
-
+        // Each thread works on every row, and jumps from column to column. For example, if there
+        // are 8 threads, thread with threadID=3 will work on columns 3, 11, 19, etc.
         float dx = (args->x1 - args->x0) / args->width;
         float dy = (args->y1 - args->y0) / args->height;
 
@@ -143,9 +145,8 @@ void* workerThreadStart(void* threadArgs) {
                 args->output[index] = mandel(x, y, args->maxIterations);
             }
         }
-
     } else {
-        // Doing block assignment
+        // Block assignment (simple horizontal split between threads)
         unsigned int count = (args->height + args->numThreads - 1) / args->numThreads;
         unsigned int startRow = args->threadId * count; // starts at 0
         unsigned int endRow = std::min((args->threadId + 1) * count, args->height);
@@ -154,6 +155,7 @@ void* workerThreadStart(void* threadArgs) {
                          startRow, endRow, args->maxIterations, args->output);
     }
 
+    // Print how long thread took
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end - start;
     std::cout << "Thread " << args->threadId << " took " << duration.count() << "secs" << std::endl;
