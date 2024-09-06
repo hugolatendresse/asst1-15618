@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <pthread.h>
+#include <algorithm>
 
 // Use this code to time your threads
 #include "CycleTimer.h"
@@ -44,6 +45,9 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+// Flag to determine weather to interleave the rows in mandelbrotThread. If false, block
+// assignment will be used
+static bool interleave = true;
 
 // Core computation of Mandelbrot set membershop
 // Iterate complex number c to determine whether it diverges
@@ -120,7 +124,34 @@ void* workerThreadStart(void* threadArgs) {
 
     WorkerArgs* args = static_cast<WorkerArgs*>(threadArgs);
 
-    // TODO: Implement worker thread here.
+    if (interleave) {
+        unsigned int count = (args->height + args->numThreads - 1) / args->numThreads;
+//        unsigned int startRow = args->threadId * count; // starts at 0
+//        unsigned int endRow = std::min((args->threadId + 1) * count, args->height);
+
+        float dx = (args->x1 - args->x0) / args->width;
+        float dy = (args->y1 - args->y0) / args->height;
+
+        for (int j = args->threadId; j < args->height; j += args->numThreads) {
+            for (int i = 0; i < args->width; ++i) {
+                float x = args->x0 + i * dx;
+                float y = args->y0 + j * dy;
+
+                int index = (j * args->width + i);
+                args->output[index] = mandel(x, y, args->maxIterations);
+            }
+        }
+
+    } else {
+        // Doing block assignment
+        // TODO after block version works, inline the function and do interleaved version!
+        unsigned int count = (args->height + args->numThreads - 1) / args->numThreads;
+        unsigned int startRow = args->threadId * count; // starts at 0
+        unsigned int endRow = std::min((args->threadId + 1) * count, args->height);
+
+        mandelbrotSerial(args->x0, args->y0, args->x1, args->y1, args->width, args->height,
+                         startRow, endRow, args->maxIterations, args->output);
+    }
 
     printf("Hello world from thread %d\n", args->threadId);
 
@@ -150,8 +181,17 @@ void mandelbrotThread(
     WorkerArgs args[MAX_THREADS];
 
     for (int i=0; i<numThreads; i++) {
-        // TODO: Set thread arguments here.
+        // Set thread arguments
+        args[i].x0 = x0;
+        args[i].x1 = x1;
+        args[i].y0 = y0;
+        args[i].y1 = y1;
+        args[i].width = width;
+        args[i].height = height;
+        args[i].maxIterations = maxIterations;
+        args[i].output = output;
         args[i].threadId = i;
+        args[i].numThreads = numThreads;
     }
 
     // Fire up the worker threads.  Note that numThreads-1 pthreads
