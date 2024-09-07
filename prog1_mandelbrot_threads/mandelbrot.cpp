@@ -136,8 +136,8 @@ void* workerThreadStart(void* threadArgs) {
         float dx = (args->x1 - args->x0) / args->width;
         float dy = (args->y1 - args->y0) / args->height;
 
-        for (int j = 0; j < args->height; j++) {
-            for (int i = args->threadId; i < args->width; i += args->numThreads) {
+        for (unsigned int j = 0; j < args->height; j++) {
+            for (unsigned int i = args->threadId; i < args->width; i += args->numThreads) {
                 float x = args->x0 + i * dx;
                 float y = args->y0 + j * dy;
 
