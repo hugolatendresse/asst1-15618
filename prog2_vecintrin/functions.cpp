@@ -81,8 +81,69 @@ void clampedExpSerial(float* values, int* exponents, float* output, int N) {
 }
 
 void clampedExpVector(float* values, int* exponents, float* output, int N) {
-    // Implement your vectorized version of clampedExpSerial here
-    //  ...
+
+    // Vectors of constants
+    __cmu418_vec_int intConstZero = _cmu418_vset_int(0);
+    __cmu418_vec_int intConstOne = _cmu418_vset_int(1);
+    __cmu418_vec_float clampMaxVector = _cmu418_vset_float(4.18f);
+
+    // Vectors and masks to be used during for-loop
+    __cmu418_vec_float valuesVector, xpowerVector, resultVector;
+    __cmu418_vec_int exponentsVector;
+    __cmu418_mask maskAll, maskClamp, maskNonZeroExponent;
+    // TODO can I move  middle one below?
+
+    for (int i = 0; i < N; i += VECTOR_WIDTH) {
+        // Use all lanes in all iterations except the last iteration, where we set the
+        // unused lanes to 0 if (N % VECTOR_WIDTH) != 0
+        maskAll = _cmu418_init_ones(min(N - i, VECTOR_WIDTH));
+
+        // Load input values and exponents
+        _cmu418_vload_float(valuesVector, values + i, maskAll);
+        _cmu418_vload_int(exponentsVector, exponents + i, maskAll);
+
+        // Initialize result vector and xpower (starts with values[i])
+        _cmu418_vset_float(resultVector, 1.0f, maskAll);
+        _cmu418_vmove_float(xpowerVector, valuesVector, maskAll);
+
+        // Create a mask to track which exponents are greater than zero (i.e, which lanes still
+        // require calculations)
+        _cmu418_vgt_int(maskNonZeroExponent, exponentsVector, intConstZero, maskAll);
+
+        // Exponentiate iteratively until exponentsVector is zero in all lanes
+        int cnt = 0;
+        while (_cmu418_cntbits(maskNonZeroExponent)) {
+            printf("count is now %d\n", cnt++);
+            // If exponent is odd, multiply by value once
+            __cmu418_vec_int oddExponentFlag;
+            __cmu418_mask oddExponentMask, oddExponentMaskAndAll;
+            // flag for (y & 0x1)
+            _cmu418_vbitand_int(oddExponentFlag, exponentsVector, intConstOne, maskAll);
+            _cmu418_veq_int(oddExponentMask, oddExponentFlag, intConstOne, maskAll);
+            oddExponentMaskAndAll = _cmu418_mask_and(oddExponentMask, maskAll);
+            // result *= xpower
+            _cmu418_vmult_float(resultVector, resultVector, xpowerVector, oddExponentMaskAndAll);
+
+            // xpower = xpower * xpower
+            _cmu418_vmult_float(xpowerVector, xpowerVector, xpowerVector, maskAll);
+
+            // y >>= 1
+            _cmu418_vshiftright_int(exponentsVector, exponentsVector, intConstOne, maskAll);
+
+            // Update mask for stopping condition
+            _cmu418_vgt_int(maskNonZeroExponent, exponentsVector, intConstZero, maskAll);
+
+        }
+
+        // Set maskClamp as a mask that identifies lanes with value > 4.18
+        _cmu418_vgt_float(maskClamp, resultVector, clampMaxVector, maskAll);
+
+        // Set lanes with value > 4.18 equal to 4.18
+        _cmu418_vmove_float(resultVector, clampMaxVector, maskClamp);
+
+        // Write results back to memory
+        _cmu418_vstore_float(output + i, resultVector, maskAll);
+    }
 }
 
 
