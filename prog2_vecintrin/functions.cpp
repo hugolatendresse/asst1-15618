@@ -159,7 +159,28 @@ float arraySumSerial(float* values, int N) {
 // Assume N % VECTOR_WIDTH == 0
 // Assume VECTOR_WIDTH is a power of 2
 float arraySumVector(float* values, int N) {
-    // Implement your vectorized version here
-    //  ...
-	return 0.f;
+    __cmu418_vec_float sumVector = _cmu418_vset_float(0.0f);
+    __cmu418_vec_float valuesVector;
+    __cmu418_mask maskAll = _cmu418_init_ones();
+
+    for (int i = 0; i < N; i += VECTOR_WIDTH) {
+        // Load values from memory
+        _cmu418_vload_float(valuesVector, values + i, maskAll);
+
+        // Add values to cumulative sum
+        _cmu418_vadd_float(sumVector, sumVector, valuesVector, maskAll);
+    }
+
+    // Reduce. At every iteration, the result are "spread" over half the number of lanes as before
+    int spread = VECTOR_WIDTH;
+    while (spread > 1) {
+        _cmu418_hadd_float(sumVector, sumVector);
+        _cmu418_interleave_float(sumVector, sumVector);
+        spread = spread / 2;
+    }
+
+    // The first lane now contains the sum of all lanes
+    float result;
+    _cmu418_vstore_float(&result, sumVector, maskAll);
+    return result;
 }
