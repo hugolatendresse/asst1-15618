@@ -111,9 +111,7 @@ void clampedExpVector(float* values, int* exponents, float* output, int N) {
         _cmu418_vgt_int(maskNonZeroExponent, exponentsVector, intConstZero, maskAll);
 
         // Exponentiate iteratively until exponentsVector is zero in all lanes
-        int cnt = 0;
         while (_cmu418_cntbits(maskNonZeroExponent)) {
-            printf("count is now %d\n", cnt++);
             // If exponent is odd, multiply by value once
             __cmu418_vec_int oddExponentFlag;
             __cmu418_mask oddExponentMask, oddExponentMaskAndAll;
