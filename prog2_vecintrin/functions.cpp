@@ -91,7 +91,6 @@ void clampedExpVector(float* values, int* exponents, float* output, int N) {
     __cmu418_vec_float valuesVector, xpowerVector, resultVector;
     __cmu418_vec_int exponentsVector;
     __cmu418_mask maskAll, maskClamp, maskNonZeroExponent;
-    // TODO can I move  middle one below?
 
     for (int i = 0; i < N; i += VECTOR_WIDTH) {
         // Use all lanes in all iterations except the last iteration, where we set the

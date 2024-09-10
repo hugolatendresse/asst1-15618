@@ -24,6 +24,7 @@ using namespace ispc;
 int main() {
     const unsigned int N = 20 * 1000 * 1000; // 20 M element vectors (~80 MB)
     const unsigned int TOTAL_BYTES = 4 * N * sizeof(float);
+    const unsigned int TOTAL_BYTES_STREAMING = 3 * N * sizeof(float);
     const unsigned int TOTAL_FLOPS = N;
 
     float scale = 2.f;
@@ -75,7 +76,7 @@ int main() {
 
     printf("[saxpy streaming]:\t[%.3f] ms\t[%.3f] GB/s\t[%.3f] GFLOPS\n",
            minStreaming * 1000,
-           toBW(TOTAL_BYTES, minStreaming),
+           toBW(TOTAL_BYTES_STREAMING, minStreaming),
            toGFLOPS(TOTAL_FLOPS, minStreaming));
 
     // Clear out the buffer
